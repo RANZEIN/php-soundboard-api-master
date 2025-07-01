@@ -1,6 +1,6 @@
 <?php
 function fetch_api($endpoint, $params = []) {
-    $base_url = "http://localhost:8080/flask_app/myinstants-api-main/";
+    $base_url = "http://localhost:8000/";
     $url = $base_url . $endpoint . '?' . http_build_query($params);
     $json = file_get_contents($url);
     return json_decode($json, true);
@@ -11,7 +11,29 @@ $q = $_GET['q'] ?? '';
 $data = [];
 
 if ($tab == 'trending') {
-    $data = fetch_api('trending.php', ['q' => 'id'])['data'] ?? [];
+    require_once "simple_html_dom.php";
+    $url = "https://www.myinstants.com/en/index/id";
+    $html = file_get_html($url);
+    $web = "https://www.myinstants.com";
+    $sounds = [];
+    if ($html) {
+        foreach ($html->find("div.instant") as $instant) {
+            $title = $instant->find("a.instant-link", 0)->plaintext;
+            $url = $web . $instant->find("a.instant-link", 0)->href;
+            $id = $instant->find("a.instant-link", 0)->href;
+            $soundmp3 = $web . $instant->find("button.small-button", 0)->onclick;
+            if (preg_match("/play\\('(.*?)'/", $soundmp3, $matches)) {
+                $mp3Url = $web . $matches[1];
+                $sounds[] = [
+                    "id" => $id,
+                    "title" => $title,
+                    "url" => $url,
+                    "mp3" => $mp3Url
+                ];
+            }
+        }
+    }
+    $data = $sounds;
 } elseif ($tab == 'recent') {
     $data = fetch_api('recent.php', ['q' => 'id'])['data'] ?? [];
 } elseif ($tab == 'search' && $q) {
